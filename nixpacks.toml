@@ -1,8 +1,9 @@
 [phases.setup]
-nixPkgs = ["php83", "sqlite", "composer"]
+nixPkgs = ["php83", "sqlite"]
 
 [phases.install]
 cmds = [
+  "curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer",
   "composer install --no-dev --optimize-autoloader",
   "mkdir -p /app/database",
   "mkdir -p /app/storage/logs",
