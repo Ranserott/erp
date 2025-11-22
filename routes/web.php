@@ -15,6 +15,11 @@ use Illuminate\Support\Facades\Route;
 // Rutas públicas (login, registro, etc.)
 require __DIR__.'/auth.php';
 
+// Healthcheck
+Route::get('/health', function () {
+    return response()->json(['status' => 'ok', 'timestamp' => now()]);
+});
+
 // Ruta principal - Redirigir al login si no está autenticado
 Route::get('/', function () {
     return redirect()->route('login');
