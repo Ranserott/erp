@@ -12,7 +12,7 @@ cmds = [
   "mkdir -p /app/storage/framework/views",
   "mkdir -p /app/bootstrap/cache",
   "cp .env.example .env",
-  "echo 'APP_NAME=\"Laravel ERP\"' > .env && echo 'APP_ENV=production' >> .env && echo 'APP_DEBUG=false' >> .env && echo 'APP_URL=https://metalu.bytea.cl' >> .env && echo 'DB_CONNECTION=sqlite' >> .env && echo 'DB_DATABASE=database/database.sqlite' >> .env",
+  "sed -i 's|APP_ENV=.*|APP_ENV=production|' .env && sed -i 's|APP_DEBUG=.*|APP_DEBUG=false|' .env && sed -i 's|APP_URL=.*|APP_URL=https://metalu.bytea.cl|' .env && sed -i 's|DB_CONNECTION=.*|DB_CONNECTION=sqlite|' .env && sed -i 's|DB_DATABASE=.*|DB_DATABASE=database/database.sqlite|' .env",
   "sqlite3 /app/database/database.sqlite 'VACUUM;' || true",
   "chown -R www-data:www-data /app",
   "chmod -R 755 /app",
