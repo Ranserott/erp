@@ -126,7 +126,7 @@
                 </a>
             </li>
 
-            @if(auth()->user()->email === 'admin@metalu.bytea.cl')
+            @if(auth()->user()->email === 'admin@metalu.bytea.cl' || auth()->user()->email === 'admin@erp.local')
             <li>
                 <a href="{{ route('users.index') }}"
                    class="flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 {{ request()->routeIs('users.*') ? 'bg-white bg-opacity-20 text-white shadow-lg' : 'hover:bg-white hover:bg-opacity-10 text-primary-100' }}">
