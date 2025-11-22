@@ -1,0 +1,66 @@
+# Use the official PHP 8.2 FPM image as base
+FROM php:8.2-fpm
+
+# Set working directory
+WORKDIR /var/www/html
+
+# Install system dependencies including SQLite
+RUN apt-get update && apt-get install -y \
+    git \
+    curl \
+    libpng-dev \
+    libonig-dev \
+    libxml2-dev \
+    libzip-dev \
+    zip \
+    unzip \
+    sqlite3 \
+    && docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath zip pdo_sqlite
+
+# Get latest Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# Copy existing application directory contents (excluding .dockerignore files)
+COPY . /var/www/html
+
+# Create necessary directories with correct permissions first
+RUN mkdir -p database storage/framework/cache storage/framework/sessions storage/framework/views storage/logs bootstrap/cache
+
+# Copy permissions properly
+RUN chown -R www-data:www-data /var/www/html
+
+# Change to www-data user
+USER www-data
+
+# Install production dependencies
+RUN composer install --optimize-autoloader --no-dev --no-progress --no-interaction
+
+# Ensure .env exists and configure for SQLite
+RUN if [ -f .env.dokploy ]; then \
+        cp .env.dokploy .env; \
+    else \
+        cp .env.example .env; \
+        echo "APP_ENV=production" >> .env; \
+        echo "APP_DEBUG=false" >> .env; \
+        echo "DB_CONNECTION=sqlite" >> .env; \
+    fi
+
+# Generate application key
+RUN php artisan key:generate --force
+
+# Create SQLite database file with correct permissions
+RUN touch database/database.sqlite && chmod 664 database/database.sqlite
+
+# Run database migrations
+RUN php artisan migrate --force
+
+# Clear and cache configurations
+RUN php artisan config:clear && php artisan route:clear && php artisan view:clear && php artisan cache:clear
+
+# Optimize for production
+RUN php artisan config:cache && php artisan route:cache && php artisan view:cache
+
+# Expose port 9000 and start php-fpm server
+EXPOSE 9000
+
+CMD ["php-fpm"]

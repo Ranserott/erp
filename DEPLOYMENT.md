@@ -41,7 +41,7 @@ git push origin main
    ```
 
 4. **Configura el Build:**
-   - **Dockerfile Path:** `Dockerfile.prod`
+   - **Dockerfile Path:** `Dockerfile.dokploy` (¡Importante!)
    - **Context:** `/`
    - No necesitas comandos de build adicionales (están en el Dockerfile)
 
