@@ -10,7 +10,8 @@ cmds = [
   "mkdir -p /app/storage/framework/cache",
   "mkdir -p /app/storage/framework/sessions",
   "mkdir -p /app/storage/framework/views",
-  "mkdir -p /app/bootstrap/cache"
+  "mkdir -p /app/bootstrap/cache",
+  "cp .env.dokploy .env 2>/dev/null || echo 'APP_NAME=Laravel\nAPP_ENV=production\nAPP_DEBUG=false\nAPP_URL=https://metalu.bytea.cl\nDB_CONNECTION=sqlite\nDB_DATABASE=database/database.sqlite' > .env"
 ]
 
 [phases.build]
@@ -21,56 +22,7 @@ cmds = [
 ]
 
 [start]
-cmd = """
-#!/bin/bash
-set -e
-
-echo "🚀 Iniciando Laravel ERP..."
-echo "📍 Directorio actual: $(pwd)"
-echo "📁 Contenido de /app:"
-ls -la /app
-
-# Create database if not exists
-if [ ! -f /app/database/database.sqlite ]; then
-    echo "📁 Creando base de datos SQLite..."
-    mkdir -p /app/database
-    sqlite3 /app/database/database.sqlite 'VACUUM;'
-    chmod 666 /app/database/database.sqlite
-    echo "✅ Base de datos creada"
-else
-    echo "✅ Base de datos ya existe"
-fi
-
-echo "📊 Estado de la base de datos:"
-ls -lh /app/database/database.sqlite 2>/dev/null || echo "⚠️  No se encuentra database.sqlite"
-
-# Set permissions
-echo "🔐 Configurando permisos..."
-chown -R www-data:www-data /app
-chmod -R 755 /app
-chmod -R 775 /app/storage /app/bootstrap/cache /app/database
-chmod 666 /app/database/database.sqlite 2>/dev/null || true
-
-# Check if composer dependencies exist
-if [ ! -d /app/vendor ]; then
-    echo "❌ ERROR: No se encuentra directorio vendor/"
-    exit 1
-fi
-
-echo "✅ Vendor encontrado: $(ls -la /app/vendor | wc -l) archivos"
-
-# Generate key and migrate
-echo "🔑 Configurando Laravel..."
-php artisan key:generate --force
-echo "📋 Ejecutando migraciones..."
-php artisan migrate --force
-
-echo "🌐 Iniciando servidor Laravel en http://0.0.0.0:9000"
-echo "🌍 APP_URL: ${APP_URL:-no definida}"
-
-# Start server and keep it running
-exec php artisan serve --host=0.0.0.0 --port=9000
-"""
+cmd = "sh -c 'echo \"🚀 Laravel ERP starting...\" && ls -la /app && if [ ! -f /app/database/database.sqlite ]; then sqlite3 /app/database/database.sqlite VACUUM; fi && chown -R www-data:www-data /app && chmod -R 755 /app && chmod -R 775 /app/storage /app/bootstrap/cache /app/database && chmod 666 /app/database/database.sqlite 2>/dev/null || true && php artisan key:generate --force && php artisan migrate --force && echo \"🌐 Starting Laravel server on port 9000...\" && php artisan serve --host=0.0.0.0 --port=9000'"
 
 [variables]
 APP_ENV = "production"
