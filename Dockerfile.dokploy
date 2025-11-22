@@ -15,6 +15,7 @@ RUN apt-get update && apt-get install -y \
     zip \
     unzip \
     sqlite3 \
+    supervisor \
     && docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath zip pdo_sqlite
 
 # Get latest Composer
@@ -60,7 +61,26 @@ RUN php artisan config:clear && php artisan route:clear && php artisan view:clea
 # Optimize for production
 RUN php artisan config:cache && php artisan route:cache && php artisan view:cache
 
+# Switch back to root for expose
+USER root
+
+# Create startup script
+RUN echo '#!/bin/bash\n\
+set -e\n\
+echo "Iniciando Laravel..."\n\
+chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/database\n\
+chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache\n\
+chmod 777 /var/www/html/database\n\
+[ -f /var/www/html/database/database.sqlite ] && chmod 666 /var/www/html/database/database.sqlite\n\
+echo "Ejecutando migraciones..."\n\
+php /var/www/html/artisan migrate --force --no-interaction\n\
+echo "Limpiando cachés..."\n\
+php /var/www/html/artisan cache:clear\n\
+echo "Iniciando PHP-FPM..."\n\
+exec php-fpm\n\
+' > /usr/local/bin/start-laravel.sh && chmod +x /usr/local/bin/start-laravel.sh
+
 # Expose port 9000 and start php-fpm server
 EXPOSE 9000
 
-CMD ["php-fpm"]
+CMD ["/usr/local/bin/start-laravel.sh"]
