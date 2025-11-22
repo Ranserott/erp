@@ -1,10 +1,15 @@
 [phases.setup]
-nixPkgs = ["php83", "sqlite"]
+nixPkgs = ["php83", "sqlite", "nodejs_20"]
 
 [phases.install]
 cmds = [
   "curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer",
+  "curl -fsSL https://deb.nodesource.com/setup_20.x | bash -",
+  "apt-get install -y nodejs",
+  "npm install -g npm",
   "php /usr/local/bin/composer install --no-dev --optimize-autoloader",
+  "npm install",
+  "npm run build",
   "mkdir -p /app/database",
   "mkdir -p /app/storage/logs",
   "mkdir -p /app/storage/framework/cache",

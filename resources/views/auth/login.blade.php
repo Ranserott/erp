@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Acceso al Sistema | ERP</title>
-    <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -24,8 +23,8 @@
             }
         }
     </script>
-    <link rel="stylesheet" href="{{ secure_asset('build/assets/app-BFDE8sfD.css') }}">
-</head>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    </head>
 <body class="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-900 via-primary-700 to-primary-500">
     <div class="max-w-md w-full space-y-8 p-8">
         <!-- Logo y Header -->
@@ -152,6 +151,6 @@
         </div>
     </div>
 
-    <script src="{{ secure_asset('build/assets/app-CJy8ASEk.js') }}"></script>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
 </body>
 </html>
