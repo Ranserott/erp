@@ -40,7 +40,7 @@
             }
         }
     </script>
-    <link rel="stylesheet" href="{{ asset('build/assets/app-DhQsjqMi.css') }}">
+    <link rel="stylesheet" href="{{ secure_asset('build/assets/app-DhQsjqMi.css') }}">
 </head>
 <body class="bg-gray-50 font-sans antialiased" x-data="appLayout">
 

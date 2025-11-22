@@ -24,7 +24,7 @@
             }
         }
     </script>
-    <link rel="stylesheet" href="{{ asset('build/assets/app-BFDE8sfD.css') }}">
+    <link rel="stylesheet" href="{{ secure_asset('build/assets/app-BFDE8sfD.css') }}">
 </head>
 <body class="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-900 via-primary-700 to-primary-500">
     <div class="max-w-md w-full space-y-8 p-8">
@@ -183,6 +183,6 @@
         </div>
     </div>
 
-    <script src="{{ asset('build/assets/app-CJy8ASEk.js') }}"></script>
+    <script src="{{ secure_asset('build/assets/app-CJy8ASEk.js') }}"></script>
 </body>
 </html>
