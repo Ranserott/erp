@@ -1,0 +1,130 @@
+# Use the official PHP 8.2 FPM image as base
+FROM php:8.2-fpm
+
+# Set working directory to match Dokploy's /app
+WORKDIR /app
+
+# Install system dependencies including SQLite
+RUN apt-get update && apt-get install -y \
+    git \
+    curl \
+    libpng-dev \
+    libonig-dev \
+    libxml2-dev \
+    libzip-dev \
+    zip \
+    unzip \
+    sqlite3 \
+    supervisor \
+    sudo \
+    && docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath zip pdo_sqlite
+
+# Get latest Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# Add www-data to sudoers for artisan commands
+RUN echo 'www-data ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
+
+# Copy existing application directory contents (excluding .dockerignore files)
+COPY . /app
+
+# Create necessary directories with correct permissions first
+RUN mkdir -p database storage/framework/cache storage/framework/sessions storage/framework/views storage/logs bootstrap/cache
+
+# Copy permissions properly
+RUN chown -R www-data:www-data /app
+
+# Change to www-data user
+USER www-data
+
+# Install production dependencies
+RUN composer install --optimize-autoloader --no-dev --no-progress --no-interaction
+
+# Ensure .env exists and configure for SQLite (prioridad: .env.simple -> .env.dokploy -> .env.example)
+RUN if [ -f .env.simple ]; then \
+        cp .env.simple .env; \
+        echo "   ✓ Usando .env.simple"; \
+    elif [ -f .env.dokploy ]; then \
+        cp .env.dokploy .env; \
+        echo "   ✓ Usando .env.dokploy"; \
+        # Corregir ruta de base de datos si usa ruta absoluta
+        sed -i 's|DB_DATABASE=/app/database/database.sqlite|DB_DATABASE=database/database.sqlite|g' .env; \
+    else \
+        cp .env.example .env; \
+        echo "   ✓ Usando .env.example"; \
+        echo "APP_ENV=production" >> .env; \
+        echo "APP_DEBUG=false" >> .env; \
+        echo "DB_CONNECTION=sqlite" >> .env; \
+        echo "DB_DATABASE=database/database.sqlite" >> .env; \
+    fi
+
+# Generate application key
+RUN php artisan key:generate --force
+
+# Switch back to root for final setup
+USER root
+
+# Create startup script that guarantees SQLite database creation
+RUN echo '#!/bin/bash\n\
+set -e\n\
+echo "================================"\n\
+echo "🚀 Iniciando Laravel ERP en /app"\n\
+echo "================================"\n\
+\n\
+cd /app\n\
+\n\
+# 1. CREATE DIRECTORIES AND SET PERMISSIONS\n\
+echo "📁 Configurando permisos del sistema de archivos..."\n\
+mkdir -p storage/logs storage/framework/{cache,sessions,views} bootstrap/cache database\n\
+chown -R www-data:www-data /app\n\
+chmod -R 755 /app\n\
+chmod -R 775 /app/storage /app/bootstrap/cache /app/database\n\
+chmod -R 777 /app/database\n\
+\n\
+# 2. CREATE SQLITE DATABASE (CRITICAL STEP)\n\
+echo "🗄️  Creando base de datos SQLite..."\n\
+if [ ! -f /app/database/database.sqlite ]; then\n\
+    echo "   ➜ Creando archivo database.sqlite..."\n\
+    # Create empty SQLite database\n\
+    sqlite3 /app/database/database.sqlite "VACUUM;" || true\n\
+    chmod 666 /app/database/database.sqlite\n\
+    echo "   ✓ Base de datos creada"\n\
+else\n\
+    echo "   ✓ Base de datos ya existe"\n\
+fi\n\
+\n\
+# Verify database file exists and is accessible\n\
+if [ ! -f /app/database/database.sqlite ]; then\n\
+    echo "❌ ERROR: No se pudo crear database.sqlite"\n\
+    exit 1\n\
+fi\n\
+\necho "   $(ls -lh /app/database/database.sqlite)"\n\
+\n\
+# 3. RUN MIGRATIONS AS WWW-DATA\n\
+echo "🔄 Ejecutando migraciones..."\n\
+sudo -u www-data php artisan migrate --force --no-interaction || {\n\
+    echo "   ⚠️  Error en migraciones, pero continuando..."\n\
+}\n\
+\n\
+# 4. CLEAR CACHES\n\
+echo "🧹 Limpiando cachés..."\n\
+sudo -u www-data php artisan cache:clear || echo "   ⚠️  Error limpiando cache"\n\
+\n\
+# 5. PREPARE LOGS\n\
+echo "📝 Preparando logs..."\n\
+touch /app/storage/logs/laravel.log\n\
+chmod 666 /app/storage/logs/laravel.log\n\
+chown www-data:www-data /app/storage/logs/laravel.log\n\
+\necho ""\n\
+echo "================================"\n\
+echo "✅ Laravel iniciado correctamente"\n\
+echo "📁 Base de datos: $(ls -la /app/database/database.sqlite 2>/dev/null || echo "NO EXISTE")"\n\
+echo "================================"\n\
+echo ""\n\
+\necho "Iniciando PHP-FPM..."\nexec php-fpm\n\
+' > /usr/local/bin/start-laravel.sh && chmod +x /usr/local/bin/start-laravel.sh
+
+# Expose port 9000 and start php-fpm server
+EXPOSE 9000
+
+CMD ["/usr/local/bin/start-laravel.sh"]
