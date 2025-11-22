@@ -1,9 +1,10 @@
 [phases.setup]
-nixPkgs = ["php83", "php83Extensions.sqlite3", "sqlite3"]
+nixPkgs = ["php83"]
 aptPkgs = ["sqlite3"]
 
 [phases.install]
 cmds = [
+  "docker-php-ext-install pdo_sqlite",
   "composer install --no-dev --optimize-autoloader",
   "php artisan key:generate",
   "php artisan migrate --force",

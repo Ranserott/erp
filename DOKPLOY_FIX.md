@@ -7,10 +7,10 @@
 
 ## 🚀 SOLUCIÓN - Configurar Nixpacks Correctamente:
 
-### 1. Sube los cambios:
+### 1. Sube los cambios (CORREGIDO):
 ```bash
 git add .
-git commit -m "Fix Dokploy with nixpacks.toml and clean .env.dokploy"
+git commit -m "Fix Dokploy nixpacks - use aptPkgs and fix sqlite extension"
 git push origin main
 ```
 
