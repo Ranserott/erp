@@ -1,18 +1,16 @@
 [phases.setup]
-nixPkgs = ["php83"]
-aptPkgs = ["sqlite3"]
+nixPkgs = ["php83", "sqlite"]
 
 [phases.install]
 cmds = [
-  "docker-php-ext-install pdo_sqlite",
   "composer install --no-dev --optimize-autoloader",
-  "php artisan key:generate",
-  "php artisan migrate --force",
-  "php artisan storage:link",
-  "php artisan cache:clear",
-  "php artisan config:clear",
-  "php artisan route:clear",
-  "php artisan view:clear"
+  "php artisan key:generate --force",
+  "mkdir -p /app/database",
+  "mkdir -p /app/storage/logs",
+  "mkdir -p /app/storage/framework/cache",
+  "mkdir -p /app/storage/framework/sessions",
+  "mkdir -p /app/storage/framework/views",
+  "mkdir -p /app/bootstrap/cache"
 ]
 
 [phases.build]
@@ -24,17 +22,17 @@ cmds = [
 
 [phases.start]
 cmds = [
-  "mkdir -p /app/storage/logs",
-  "mkdir -p /app/database",
   "if [ ! -f /app/database/database.sqlite ]; then sqlite3 /app/database/database.sqlite 'VACUUM;'; fi",
+  "php artisan migrate --force",
   "chown -R www-data:www-data /app",
+  "chmod -R 755 /app",
   "chmod -R 775 /app/storage /app/bootstrap/cache /app/database",
   "chmod 666 /app/database/database.sqlite 2>/dev/null || true",
-  "php-fpm"
+  "php artisan serve --host=0.0.0.0 --port=9000"
 ]
 
 [start]
-cmd = "php-fpm"
+cmd = "php artisan serve --host=0.0.0.0 --port=9000"
 
 [variables]
 APP_ENV = "production"
