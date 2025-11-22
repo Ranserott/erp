@@ -16,10 +16,14 @@ RUN apt-get update && apt-get install -y \
     unzip \
     sqlite3 \
     supervisor \
+    sudo \
     && docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath zip pdo_sqlite
 
 # Get latest Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# Add www-data to sudoers for artisan commands
+RUN echo 'www-data ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
 
 # Copy existing application directory contents (excluding .dockerignore files)
 COPY . /app
@@ -50,13 +54,10 @@ RUN if [ -f .env.dokploy ]; then \
 # Generate application key
 RUN php artisan key:generate --force
 
-# Create SQLite database file with correct permissions
-RUN mkdir -p /app/database && touch /app/database/database.sqlite && chmod 664 /app/database/database.sqlite
+# Create SQLite database directory (but not file yet - do it in startup as root)
+RUN mkdir -p /app/database
 
-# Run database migrations
-RUN php artisan migrate --force 2>&1 || echo "Migrations completed or skipped"
-
-# Clear and cache configurations
+# Clear and cache configurations (without migrations)
 RUN php artisan config:clear && php artisan route:clear && php artisan view:clear && php artisan cache:clear
 
 # Optimize for production (sin route:cache por ahora)
@@ -68,43 +69,58 @@ USER root
 # Create startup script
 RUN echo '#!/bin/bash\n\
 set -e\n\
-echo "=== Iniciando Laravel ==="\n\
-echo "Directorio de trabajo: $(pwd)"\n\
-echo "Usuario: $(whoami)"\n\
+echo "================================"\n\
+echo "🚀 Iniciando Laravel ERP en /app"\n\
+echo "================================"\n\
 \n\
 cd /app\n\
 \n\
-# Cambiar permisos\n\
-echo "Ajustando permisos..."\n\
-chown -R www-data:www-data /app/storage /app/bootstrap/cache /app/database 2>/dev/null || true\n\
-chmod -R 775 /app/storage /app/bootstrap/cache 2>/dev/null || true\n\
-chmod 777 /app/database 2>/dev/null || true\n\
+# 1. SETUP FILESYSTEM\n\
+echo "📁 Configurando permisos del sistema de archivos..."\n\
+mkdir -p storage/logs storage/framework/{cache,sessions,views} bootstrap/cache database\n\
+chown -R www-data:www-data /app 2>/dev/null || true\n\
+chmod -R 755 /app\n\
+chmod -R 775 /app/storage /app/bootstrap/cache /app/database\n\
+chmod -R 777 /app/database\n\
 \n\
-# Crear base de datos SQLite\n\
-echo "Verificando base de datos SQLite en /app/database/database.sqlite..."\n\
-mkdir -p /app/database\n\
+# 2. CREATE SQLITE DATABASE\n\
+echo "🗄️  Creando base de datos SQLite..."\n\
 if [ ! -f /app/database/database.sqlite ]; then\n\
-    echo "Creando database.sqlite..."\n\
-    touch /app/database/database.sqlite\n\
+    echo "   ➜ Creando archivo database.sqlite..."\n\
+    sqlite3 /app/database/database.sqlite ".databases"\n\
     chmod 666 /app/database/database.sqlite\n\
+else\n\
+    echo "   ✓ Base de datos ya existe"\n\
 fi\n\
-echo "Base de datos lista: $(ls -lh /app/database/database.sqlite 2>/dev/null || echo \"NO ENCONTRADA\")"\n\
+echo "   $(ls -lh /app/database/database.sqlite)"\n\
 \n\
-# Ejecutar migraciones\n\
-echo "Ejecutando migraciones..."\n\
-php artisan migrate --force --no-interaction 2>&1 || echo "⚠ Error en migraciones (continuando)"\n\
+# 3. RUN MIGRATIONS AS WWW-DATA\n\
+echo "🔄 Ejecutando migraciones..."\n\
+sudo -u www-data php artisan migrate --force --no-interaction 2>&1 || {\n\
+    echo "   ⚠️  Error en migraciones pero continuando..."\n\
+}\n\
 \n\
-# Limpiar cachés\n\
-echo "Limpiando cachés..."\n\
-php artisan cache:clear 2>&1 || echo "⚠ Error limpiando cache (continuando)"\n\
+# 4. FIX PERMISSIONS AGAIN AFTER MIGRATIONS\n\
+echo "🔐 Ajustando permisos finales..."\n\
+chmod -R 775 /app/storage /app/bootstrap/cache /app/database\n\
+chmod -R 777 /app/database\n\
+chmod 666 /app/database/database.sqlite 2>/dev/null || true\n\
 \n\
-# Preparar logs\n\
-echo "Preparando logs..."\n\
-mkdir -p /app/storage/logs\n\
+# 5. CLEAR CACHES\n\
+echo "🧹 Limpiando cachés..."\n\
+sudo -u www-data php artisan cache:clear 2>&1 || echo "   ⚠️  Error limpiando cache"\n\
+\n\
+# 6. PREPARE LOGS\n\
+echo "📝 Preparando logs..."\n\
 touch /app/storage/logs/laravel.log\n\
-chmod 666 /app/storage/logs/laravel.log 2>/dev/null || true\n\
+chmod 666 /app/storage/logs/laravel.log\n\
 \n\
-echo "=== Laravel iniciado correctamente ==="\n\
+echo ""\n\
+echo "================================"\n\
+echo "✅ Laravel iniciado correctamente"\n\
+echo "================================"\n\
+echo ""\n\
+\n\
 exec php-fpm\n\
 ' > /usr/local/bin/start-laravel.sh && chmod +x /usr/local/bin/start-laravel.sh
 
