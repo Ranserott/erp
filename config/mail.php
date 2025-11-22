@@ -39,12 +39,12 @@ return [
 
         'smtp' => [
             'transport' => 'smtp',
-            'scheme' => env('MAIL_SCHEME') ?: null,
-            'url' => env('MAIL_URL') ?: null,
+            'scheme' => env('MAIL_SCHEME', null),
+            'url' => env('MAIL_URL', null),
             'host' => env('MAIL_HOST', '127.0.0.1'),
             'port' => env('MAIL_PORT', 2525),
-            'username' => env('MAIL_USERNAME') ?: null,
-            'password' => env('MAIL_PASSWORD') ?: null,
+            'username' => env('MAIL_USERNAME', null),
+            'password' => env('MAIL_PASSWORD', null),
             'timeout' => null,
             'local_domain' => env('MAIL_EHLO_DOMAIN', parse_url((string) env('APP_URL', 'http://localhost'), PHP_URL_HOST)),
         ],
