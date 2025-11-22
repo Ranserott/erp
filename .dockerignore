@@ -14,9 +14,19 @@ Homestead.yaml
 npm-debug.log
 yarn-error.log
 composer.lock
+
+# Keep these files for Docker build
+!database/
+!.env.production
+!storage/
+
+# Exclude logs and cache from Docker
 storage/logs/*
 storage/framework/cache/*
 storage/framework/sessions/*
 storage/framework/testing/*
 storage/framework/views/*
-/bootstrap/cache/*.php
+bootstrap/cache/*.php
+
+# Exclude SQLite database if it exists
+database/database.sqlite
