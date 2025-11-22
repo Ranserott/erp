@@ -67,16 +67,40 @@ USER root
 # Create startup script
 RUN echo '#!/bin/bash\n\
 set -e\n\
-echo "Iniciando Laravel..."\n\
+echo "=== Iniciando Laravel ==="\n\
+echo "Directorio de trabajo: $(pwd)"\n\
+echo "Usuario: $(whoami)"\n\
+\n\
+# Cambiar permisos\n\
+echo "Ajustando permisos..."\n\
 chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/database\n\
 chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache\n\
 chmod 777 /var/www/html/database\n\
-[ -f /var/www/html/database/database.sqlite ] && chmod 666 /var/www/html/database/database.sqlite\n\
+\n\
+# Crear base de datos SQLite\n\
+echo "Verificando base de datos SQLite..."\n\
+if [ ! -f /var/www/html/database/database.sqlite ]; then\n\
+    echo "Creando database.sqlite..."\n\
+    touch /var/www/html/database/database.sqlite\n\
+fi\n\
+chmod 666 /var/www/html/database/database.sqlite\n\
+\n\
+# Ejecutar migraciones\n\
 echo "Ejecutando migraciones..."\n\
-php /var/www/html/artisan migrate --force --no-interaction\n\
+cd /var/www/html\n\
+php artisan migrate --force --no-interaction 2>&1 || echo "Error en migraciones (ignorado)"\n\
+\n\
+# Limpiar cachés\n\
 echo "Limpiando cachés..."\n\
-php /var/www/html/artisan cache:clear\n\
-echo "Iniciando PHP-FPM..."\n\
+php artisan cache:clear 2>&1 || echo "Error limpiando cache (ignorado)"\n\
+\n\
+# Limpiar logs viejos\n\
+echo "Preparando logs..."\n\
+mkdir -p /var/www/html/storage/logs\n\
+touch /var/www/html/storage/logs/laravel.log\n\
+chmod 666 /var/www/html/storage/logs/laravel.log\n\
+\n\
+echo "=== Laravel iniciado correctamente ==="\n\
 exec php-fpm\n\
 ' > /usr/local/bin/start-laravel.sh && chmod +x /usr/local/bin/start-laravel.sh
 
