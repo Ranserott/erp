@@ -9,10 +9,7 @@ cmds = [
   "mkdir -p /app/storage/framework/cache",
   "mkdir -p /app/storage/framework/sessions",
   "mkdir -p /app/storage/framework/views",
-  "mkdir -p /app/bootstrap/cache",
-  "if [ ! -f /app/database/database.sqlite ]; then sqlite3 /app/database/database.sqlite 'VACUUM;'; fi",
-  "php artisan key:generate --force",
-  "php artisan migrate --force"
+  "mkdir -p /app/bootstrap/cache"
 ]
 
 [phases.build]
@@ -22,17 +19,35 @@ cmds = [
   "php artisan view:cache"
 ]
 
-[phases.start]
-cmds = [
-  "chown -R www-data:www-data /app",
-  "chmod -R 755 /app",
-  "chmod -R 775 /app/storage /app/bootstrap/cache /app/database",
-  "chmod 666 /app/database/database.sqlite 2>/dev/null || true",
-  "php artisan serve --host=0.0.0.0 --port=9000"
-]
-
 [start]
-cmd = "php artisan serve --host=0.0.0.0 --port=9000"
+cmd = """
+#!/bin/bash
+set -e
+
+echo "🚀 Iniciando Laravel ERP..."
+
+# Create database if not exists
+if [ ! -f /app/database/database.sqlite ]; then
+    echo "📁 Creando base de datos SQLite..."
+    sqlite3 /app/database/database.sqlite 'VACUUM;'
+    chmod 666 /app/database/database.sqlite
+fi
+
+# Set permissions
+chown -R www-data:www-data /app
+chmod -R 755 /app
+chmod -R 775 /app/storage /app/bootstrap/cache /app/database
+
+# Generate key and migrate
+php artisan key:generate --force
+php artisan migrate --force
+
+echo "✅ Aplicación lista!"
+echo "🌐 Iniciando servidor en http://0.0.0.0:9000"
+
+# Start server
+php artisan serve --host=0.0.0.0 --port=9000
+"""
 
 [variables]
 APP_ENV = "production"
