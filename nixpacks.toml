@@ -4,13 +4,15 @@ nixPkgs = ["php83", "sqlite"]
 [phases.install]
 cmds = [
   "composer install --no-dev --optimize-autoloader",
-  "php artisan key:generate --force",
   "mkdir -p /app/database",
   "mkdir -p /app/storage/logs",
   "mkdir -p /app/storage/framework/cache",
   "mkdir -p /app/storage/framework/sessions",
   "mkdir -p /app/storage/framework/views",
-  "mkdir -p /app/bootstrap/cache"
+  "mkdir -p /app/bootstrap/cache",
+  "if [ ! -f /app/database/database.sqlite ]; then sqlite3 /app/database/database.sqlite 'VACUUM;'; fi",
+  "php artisan key:generate --force",
+  "php artisan migrate --force"
 ]
 
 [phases.build]
@@ -22,8 +24,6 @@ cmds = [
 
 [phases.start]
 cmds = [
-  "if [ ! -f /app/database/database.sqlite ]; then sqlite3 /app/database/database.sqlite 'VACUUM;'; fi",
-  "php artisan migrate --force",
   "chown -R www-data:www-data /app",
   "chmod -R 755 /app",
   "chmod -R 775 /app/storage /app/bootstrap/cache /app/database",
