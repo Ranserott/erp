@@ -11,7 +11,15 @@ cmds = [
   "mkdir -p /app/storage/framework/sessions",
   "mkdir -p /app/storage/framework/views",
   "mkdir -p /app/bootstrap/cache",
-  "cp .env.example .env"
+  "cp .env.example .env",
+  "php -r \"file_put_contents('.env', 'APP_NAME=\\\\\\\"Laravel ERP\\\\\\\"\\\\nAPP_ENV=production\\\\nAPP_DEBUG=false\\\\nAPP_URL=https://metalu.bytea.cl\\\\nDB_CONNECTION=sqlite\\\\nDB_DATABASE=database/database.sqlite\\\\n');\"",
+  "sqlite3 /app/database/database.sqlite 'VACUUM;' || true",
+  "chown -R www-data:www-data /app",
+  "chmod -R 755 /app",
+  "chmod -R 775 /app/storage /app/bootstrap/cache /app/database",
+  "chmod 666 /app/database/database.sqlite 2>/dev/null || true",
+  "php artisan key:generate --force",
+  "php artisan migrate --force"
 ]
 
 [phases.build]
@@ -22,7 +30,7 @@ cmds = [
 ]
 
 [start]
-cmd = "sh -c 'echo \"🚀 Laravel ERP starting...\" && php -r \"file_put_contents(\\\".env\\\", \\\"APP_NAME=\\\\\\\"Laravel ERP\\\\\\\"\\\\nAPP_ENV=production\\\\nAPP_DEBUG=false\\\\nAPP_URL=https://metalu.bytea.cl\\\\nDB_CONNECTION=sqlite\\\\nDB_DATABASE=database/database.sqlite\\\\n\\\");\" && if [ ! -f /app/database/database.sqlite ]; then sqlite3 /app/database/database.sqlite VACUUM; fi && chown -R www-data:www-data /app && chmod -R 755 /app && chmod -R 775 /app/storage /app/bootstrap/cache /app/database && chmod 666 /app/database/database.sqlite 2>/dev/null || true && php artisan key:generate --force && php artisan migrate --force && echo \"🌐 Starting Laravel server on port 9000...\" && php artisan serve --host=0.0.0.0 --port=9000'"
+cmd = "php artisan serve --host=0.0.0.0 --port=9000"
 
 [variables]
 APP_ENV = "production"
