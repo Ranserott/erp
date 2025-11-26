@@ -8,4 +8,14 @@ export default defineConfig({
             refresh: true,
         }),
     ],
+    base: process.env.NODE_ENV === 'production' ? './' : '/',
+    build: {
+        assetsDir: 'build/assets',
+        manifest: true,
+        rollupOptions: {
+            output: {
+                manualChunks: undefined,
+            },
+        },
+    },
 });
