@@ -22,7 +22,7 @@ class AdminMiddleware
         }
 
         // Verificar que sea el administrador
-        if (!in_array(Auth::user()->email, ['admin@metalu.bytea.cl', 'admin@erp.local'])) {
+        if (Auth::user()->email !== 'admin@metalu.bytea.cl') {
             return redirect('/dashboard')->with('error', 'No tienes permisos para gestionar usuarios.');
         }
 

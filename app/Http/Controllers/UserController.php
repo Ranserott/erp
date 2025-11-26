@@ -83,7 +83,7 @@ class UserController extends Controller
     public function destroy(User $user)
     {
         // No permitir eliminar al administrador principal
-        if (in_array($user->email, ['admin@erp.local', 'admin@metalu.bytea.cl'])) {
+        if ($user->email === 'admin@erp.local') {
             return redirect()->route('users.index')
                 ->with('error', 'No se puede eliminar al usuario administrador principal.');
         }
